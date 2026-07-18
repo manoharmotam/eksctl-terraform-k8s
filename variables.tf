@@ -13,3 +13,17 @@ variable "key_name" {
 variable "instance_type" {
   default = "c7i-flex.large"
 }
+
+variable "aws_key_id" {
+  type = string
+  sensitive = true
+}
+
+variable "aws_secret_key" {
+  type = string
+  sensitive = true
+}
+
+variable "ssh_password" {
+  sensitive = true
+}

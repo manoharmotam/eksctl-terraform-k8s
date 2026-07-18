@@ -23,23 +23,23 @@ chmod +x ./kubectl
 cp kubectl /usr/local/bin/kubectl
 
 #setup aws credentials
-# mkdir -p /home/ec2-user/.aws
+mkdir -p /home/ec2-user/.aws
 
-# cat <<EOF > /home/ec2-user/.aws/credentials
-# [default]
-# aws_access_key_id=${aws_access_key_id}
-# aws_secret_access_key=${aws_secret_access_key}
-# EOF
+cat <<EOF > /home/ec2-user/.aws/credentials
+[default]
+aws_access_key_id=${aws_access_key_id}
+aws_secret_access_key=${aws_secret_access_key}
+EOF
 
-# cat <<EOF > /home/ec2-user/.aws/config
-# [default]
-# region = us-east-1
-# output = json
-# EOF
+cat <<EOF > /home/ec2-user/.aws/config
+[default]
+region = us-east-1
+output = json
+EOF
 
-# chown -R ec2-user:ec2-user /home/ec2-user/.aws
-# chmod 600 /home/ec2-user/.aws/credentials
-# chmod 600 /home/ec2-user/.aws/config
+chown -R ec2-user:ec2-user /home/ec2-user/.aws
+chmod 600 /home/ec2-user/.aws/credentials
+chmod 600 /home/ec2-user/.aws/config
 
 #creating the cluster using eksctl
 cd /home/ec2-user/

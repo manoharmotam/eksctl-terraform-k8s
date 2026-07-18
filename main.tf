@@ -1,11 +1,13 @@
 resource "aws_instance" "jump" {
-  ami                    = ami-01edba92f9036f76e
+  ami                    = local.ami_id
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.main.id]
   key_name               = var.key_name
-  user_data = templatefile("{path.path.module}/bootstrap.sh.tftpl", {
+  user_data = templatefile("${path.module}/bootstrap.sh.tftpl", {
     partition_number = 4
     extend_size      = 30
+	aws_access_key_id = var.aws_key_id
+	aws_secret_access_key = var.aws_secret_key
   })
 
   root_block_device {
@@ -21,21 +23,21 @@ resource "aws_instance" "jump" {
     )
   }
 
-  connection {
-    type        = "ssh"
-    port        = 22
-    host        = self.public_ip
-    user        = "ec2-user"
-    private_key = file("/home/ubuntu/.ssh/ami2.pem")
-  }
-  provisioner "file" {
-    source      = "/home/ubuntu/.aws/credentials"
-    destination = "/home/ec2-user/.aws/credentials"
-  }
-  provisioner "file" {
-    source      = "/home/ubuntu/.aws/config"
-    destination = "/home/ec2-user/.aws/config"
-  }
+#   connection {
+#     type        = "ssh"
+#     port        = 22
+#     host        = self.public_ip
+#     user        = "ec2-user"
+#     private_key = file("/home/ubuntu/.ssh/ami2.pem")
+#   }
+#   provisioner "file" {
+#     source      = "/home/ubuntu/.aws/credentials"
+#     destination = "/home/ec2-user/.aws/credentials"
+#   }
+#   provisioner "file" {
+#     source      = "/home/ubuntu/.aws/config"
+#     destination = "/home/ec2-user/.aws/config"
+#   }
 
   tags = merge(local.common_tags,
     {
@@ -65,10 +67,30 @@ resource "aws_security_group" "main" {
     {
       Name = "${local.common_name}-jump"
   })
+
+  lifecycle {
+	create_before_destroy = true
+  }
 }
 
 resource "terraform_data" "destroy_cluster" {
   input = {
     host = aws_instance.jump.public_ip
-  }
+	password = var.ssh_password
+	}
+
+	provisioner "remote-exec" {
+	  when = destroy
+	  inline = [ 
+			"eksctl delete cluster -f /home/ec2-user/eksctl-terraform-k8s/eksctl.yaml --wait"
+	   ]
+
+	   connection {
+		type = "ssh"
+		port = 22
+		host = self.input.host
+		user = "ec2-user"
+		password = self.input.password
+	   }
+	}
 }
