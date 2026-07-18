@@ -1,0 +1,52 @@
+#! /bin/bash
+
+growpart /dev/nvme0n1 ${partition_number}
+lvextend -r -L +${extend_size}G /dev/mapper/RootVG-varVol
+
+#install docker
+dnf -y install dnf-plugins-core
+dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+systemctl enable --now docker
+usermod -a -G docker ec2-user
+
+#download and install kubectl
+ARCH=amd64
+PLATFORM=$(uname -s)_$ARCH
+curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+sudo install -m 0755 /tmp/eksctl /usr/local/bin && rm /tmp/eksctl
+
+#download and install kubectl
+curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.34.6/2026-04-08/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+cp kubectl /usr/local/bin/kubectl
+
+#setup aws credentials
+# mkdir -p /home/ec2-user/.aws
+
+# cat <<EOF > /home/ec2-user/.aws/credentials
+# [default]
+# aws_access_key_id=${aws_access_key_id}
+# aws_secret_access_key=${aws_secret_access_key}
+# EOF
+
+# cat <<EOF > /home/ec2-user/.aws/config
+# [default]
+# region = us-east-1
+# output = json
+# EOF
+
+# chown -R ec2-user:ec2-user /home/ec2-user/.aws
+# chmod 600 /home/ec2-user/.aws/credentials
+# chmod 600 /home/ec2-user/.aws/config
+
+#creating the cluster using eksctl
+cd /home/ec2-user/
+git clone https://github.com/manoharmotam/eksctl-terraform-k8s.git
+cd eksctl-terraform-k8s
+sudo -u ec2-user /usr/local/bin/eksctl create cluster -f eksctl.yaml
+
+#authenticate kubectl with cluster
+sudo -u ec2-user aws eks update-kubeconfig --region us-east-1 --name roboshop-dev
+sudo -u ec2-user /usr/local/bin/kubectl get nodes
