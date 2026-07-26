@@ -74,8 +74,8 @@ resource "aws_security_group" "main" {
 }
 
 resource "terraform_data" "destroy_cluster" {
-  input = {
-    host = aws_instance.jump.public_ip
+ input = {
+   host = aws_instance.jump.public_ip
 	password = var.ssh_password
 	}
 
